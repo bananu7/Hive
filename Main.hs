@@ -43,7 +43,11 @@ sampleLoad :: LoadFn SampleState
 sampleLoad = SampleState <$> loadSprites
                          <*> pure startBoard
 
-startBoard = Map.insert (3,3) (H.PlayerWhite, H.Queen) H.emptyBoard
+startBoard = H.emptyBoard 
+    & Map.insert (3,3) (H.PlayerWhite, H.Queen)
+    & Map.insert (3,2) (H.PlayerWhite, H.Spider)
+    & Map.insert (2,3) (H.PlayerWhite, H.Spider)
+    & Map.insert (2,2) (H.PlayerWhite, H.Spider)
 
 sampleDraw :: DrawFn SampleState
 sampleDraw s = map drawPiece $ Map.toList (s ^. board)
@@ -54,7 +58,16 @@ sampleDraw s = map drawPiece $ Map.toList (s ^. board)
         findSprite u = fromJust $ lookup u (s ^. sprites)
 
         toScreen :: H.Point -> Vec2
-        toScreen (x,y) = Vec2 (fromIntegral x * 200) (fromIntegral y * 200)
+        toScreen (ix,iy) = if ix `mod` 2 == 0
+                            then Vec2 (x * dw) (y * dh)
+                            else Vec2 (x * dw) ((y + 0.5) * dh)
+            where
+                x = fromIntegral ix
+                y = fromIntegral iy
+                w = 200
+                h = sqrt(3) * 0.5 * w
+                dw = 0.75 * w
+                dh = h
 
 
 sampleUpdate :: UpdateFn SampleState
