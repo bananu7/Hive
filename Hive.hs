@@ -47,3 +47,5 @@ unitToChar Spider = 'S'
 unitToChar Grasshopper = 'G'
 unitToChar Queen = 'Q'
 
+emptyBoard :: Board
+emptyBoard = Map.fromList []
