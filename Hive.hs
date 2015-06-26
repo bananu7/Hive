@@ -1,30 +1,38 @@
-module Hive where
- 
-import qualified Data.Map.Strict as Map
+module Hive 
+    ( module Hive.Board
+    , module Hive.Coord
+    , Board
+    , Unit(..)
+    , Player(..)
+    , isValidMove
+    , Point
+    )
+where
+
+import Prelude hiding (lookup)
 import Data.List.Split (chunksOf)
 import Data.Ix (range)
 import Data.Maybe (catMaybes)
 
+import Hive.Board
+import Hive.Coord
+
 data Unit = Beetle (Maybe Unit) | Ant | Spider | Grasshopper | Queen deriving (Eq, Show)
  
 data Player = PlayerWhite | PlayerBlack deriving (Eq, Show)
-type Point = (Int, Int)
+
+type Point = AxialCoord
 type Field = (Player, Unit)
-type Board = Map.Map Point Field
- 
 data Move = MoveFromTo Point Point | MoveInsert Point Field
- 
-(<+>) :: Point -> Point -> Point
-(x,y) <+> (a,b) = (x+a, y+b)
+
+type Board = HexBoard Field
 
 isValidMove :: Move -> Board -> Bool
 isValidMove (MoveInsert p (owner, unit)) board = numberOfFriendFields >= 1 && numberOfEnemyFields == 0
     where
         numberOfFriendFields = numberOfFields owner
         numberOfEnemyFields = numberOfFields $ playerCounterpart owner
-        numberOfFields player = length . filter ((== player) . fst) $ neighboringFields
-        neighboringFields = catMaybes . map (((flip Map.lookup) board) . (<+> p)) $ neighbourCoords
-        neighbourCoords = [(-1, 0), (1, 0), (-1, -1), (0, -1), (0, 1), (-1, 1)]
+        numberOfFields player = length . filter ((== player) . fst) $ neighbours p board    
 
 isValidMove (MoveFromTo _ _) board = undefined
  
@@ -33,10 +41,10 @@ playerCounterpart PlayerBlack = PlayerWhite
 playerCounterpart PlayerWhite = PlayerBlack
 
 toString :: Board -> String
-toString board = unlines . chunksOf 10 . map fieldToChar $ range ((0, 0), (9, 9))
+toString board = unlines . chunksOf 10 . map fieldToChar $ range (AxialCoord (0, 0), AxialCoord (9, 9))
     where 
         fieldToChar :: Point -> Char
-        fieldToChar point = case Map.lookup point board of
+        fieldToChar point = case lookup point board of
             Just (_, unit) -> unitToChar unit
             Nothing -> '.'
  
@@ -46,6 +54,3 @@ unitToChar Ant = 'A'
 unitToChar Spider = 'S'
 unitToChar Grasshopper = 'G'
 unitToChar Queen = 'Q'
-
-emptyBoard :: Board
-emptyBoard = Map.fromList []
