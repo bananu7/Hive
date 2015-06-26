@@ -13,6 +13,7 @@ emptyBoard = HexBoard $ Map.fromList []
 lookup :: Coord c => c -> HexBoard a -> Maybe a
 lookup c (HexBoard b) = Map.lookup (toAxial c) b
 
+toList :: HexBoard a -> [(AxialCoord, a)]
 toList (HexBoard b) = Map.toList b
 
 insert :: Coord c => c -> a -> HexBoard a -> HexBoard a
