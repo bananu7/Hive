@@ -19,18 +19,24 @@ toList (HexBoard b) = Map.toList b
 insert :: Coord c => c -> a -> HexBoard a -> HexBoard a
 insert c a (HexBoard b) = HexBoard $ Map.insert (toAxial c) a b
 
+delete :: Coord c => c -> HexBoard a -> HexBoard a
+delete c (HexBoard b) = HexBoard $ Map.delete (toAxial c) b
+
+neighbourOffsets :: [(Int, Int)]
+neighbourOffsets = [
+    (0, negate 1),
+    (1, negate 1),
+    (1, 0),
+    (0, 1),
+    (negate 1, 1),
+    (negate 1, 0)
+    ]
+
 -- in "clock" order, starting at 12.
 neighbourCoords :: (Coord c) => c -> [AxialCoord]
 neighbourCoords c = axialNeighbours . toAxial $ c
     where
-        axialNeighbours c@(AxialCoord (q, r)) = map ((<+> c) . AxialCoord) $ [
-        	(0, negate 1),
-        	(1, negate 1),
-            (1, 0),
-            (0, 1),
-            (negate 1, 1),
-            (negate 1, 0)
-            ]
+        axialNeighbours c@(AxialCoord (q, r)) = map ((<+> c) . AxialCoord) $ neighbourOffsets
 
-neighbours :: Coord c => c -> HexBoard a -> [a]
-neighbours c b = catMaybes . map ((flip lookup) b) . neighbourCoords $ c
+neighbours :: Coord c => c -> HexBoard a -> [Maybe a]
+neighbours c b = map ((flip lookup) b) . neighbourCoords $ c

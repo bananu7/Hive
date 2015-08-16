@@ -23,6 +23,8 @@ data SampleState = SampleState {
 }
 makeLenses ''SampleState
 
+resourcePath = "img/"
+
 imageData :: [((Player, Unit), String)]
 imageData = [
     ((PlayerWhite, Queen), "queen.png"),
@@ -37,9 +39,11 @@ imageData = [
     ((PlayerBlack, Ant), "ant_b.png")
     ]
 
+moveSprite = loadSprite $ resourcePath ++ "move.png"
+
 loadSprites :: IO [((Player, Unit), Sprite)]
 loadSprites = do
-    let withPaths = map (Control.Lens._2 %~ ("img/" ++)) imageData
+    let withPaths = map (Control.Lens._2 %~ (resourcePath ++)) imageData
     mapM turnIntoSprite withPaths
     where
         turnIntoSprite :: ((Player, Unit), String) -> IO ((Player, Unit), Sprite)
@@ -55,7 +59,6 @@ startBoard = emptyBoard
     & insert (OffsetCoord (3, 3)) (PlayerWhite, Queen)
     & insert (OffsetCoord (3, 4)) (PlayerBlack, Queen)
     & insert (OffsetCoord (3, 2)) (PlayerBlack, Ant)
-    & insert (OffsetCoord (3, 2)) (PlayerBlack, Ant)
 
 displayScale :: Float
 displayScale = 0.6
@@ -63,6 +66,15 @@ displayScale = 0.6
 coordToPixel :: Coord c => c -> Vec2
 coordToPixel pos = Vec2 (fromIntegral x) (fromIntegral y)
     where (x,y) = toPixel (floor $ 200 * displayScale) pos
+
+drawMoves :: Coord c => c -> DrawFn SampleState
+drawMoves =
+    let 
+        b = (s ^. board)
+        moves = validUnitMoves c b
+        moveToSprite pos = translate (coordToPixel pos) $ sprite TopLeft moveSprite
+    in
+        map moveToSprite moves
 
 sampleDraw :: DrawFn SampleState
 sampleDraw s = map drawPiece $ toList (s ^. board)

@@ -13,7 +13,8 @@ where
 import Prelude hiding (lookup)
 import Data.List.Split (chunksOf)
 import Data.Ix (range)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, isNothing, isJust)
+import qualified Data.Set as Set
 
 import Hive.Board
 import Hive.Coord
@@ -33,7 +34,7 @@ isValidMove (MoveInsert p (owner, unit)) board = numberOfFriendFields >= 1 && nu
     where
         numberOfFriendFields = numberOfFields owner
         numberOfEnemyFields = numberOfFields $ playerCounterpart owner
-        numberOfFields player = length . filter ((== player) . fst) $ neighbours p board    
+        numberOfFields player = length . filter ((== player) . fst) . catMaybes $ neighbours p board    
 
 isValidMove (MoveFromTo from to) board = isValidUnitMove (o, u) board to
     where
@@ -41,12 +42,60 @@ isValidMove (MoveFromTo from to) board = isValidUnitMove (o, u) board to
         o :: Player
         (o, u) = lookup from board
 
-isSurrounded :: Coord c => Board -> c -> Bool
+type Direction = Int
+{-
+directions
+
+    0 
+ 5     1
+ 4     2
+    3
+-}
+
+type MoveSet = Set.Set AxialCoord
+
+-- 
+expandSingleMove :: Coord c => Board -> c -> MoveSet
+expandSingleMove b c = map (moved c) . filter isValidDirection $ [0..5]
+    where
+        n = neighbours c b
+        getN d = n !! (d `mod` 6)
+
+        isValidDirection :: Int -> Bool
+        isValidDirection d = (isNothing $ getN d) && ((isJust $ getN (d-1)) `xor` (isJust $ getN (d+1)))
+            where
+                xor :: Bool -> Bool -> Bool
+                xor True = not
+                xor False = id
+
+        moved :: AxialCoord -> Direction -> AxialCoord
+        moved c d = (AxialCoord $ neighbourOffsets !! d) <+> c
+
+-- hive graph traversal
+expandAntMoves :: Board -> MoveSet -> MoveSet
+expandAntMoves b m =
+    let
+        newMoves = Set.fromList $ map expandSingleMove (Set.toList m)
+    in
+        m ++ expandAntMoves b (Set.difference m newMoves)
+
+-- remove the original ant from the spot
+validAntMoves :: Coord c => c -> Board -> [AxialCoord]
+validAntMoves c b = toList $ expandAntMoves (delete c b) (Set.fromList [c])
+
+validUnitMoves :: Coord c => c -> Board -> [AxialCoord]
+validUnitMoves c b = 
+    let 
+        (_, u) = lookup c b
+    in
+        case u of
+            Ant -> validAntMoves c b
+            _ -> []
 
 -- The owner of the unit isn't necessary to find out if the move is valid.
 isValidUnitMove :: Coord c => Unit -> Board -> (c, c) -> Bool
-isValidUnitMove Ant b (from, to) = (not . isSurrounded b $ from) && (not . isSurrounded b $ to)
-
+isValidUnitMove Ant b (from, to) = undefined
+isValidUnitMove Spider b (from, to) = undefined
 isValidUnitMove _ _ _ = undefined
 
 playerCounterpart :: Player -> Player
