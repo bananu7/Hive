@@ -19,19 +19,17 @@ toList (HexBoard b) = Map.toList b
 insert :: Coord c => c -> a -> HexBoard a -> HexBoard a
 insert c a (HexBoard b) = HexBoard $ Map.insert (toAxial c) a b
 
-size :: HexBoard a -> Int
-size (HexBoard b) = Map.size b
-
+-- in "clock" order, starting at 12.
 neighbourCoords :: (Coord c) => c -> [AxialCoord]
 neighbourCoords c = axialNeighbours . toAxial $ c
     where
         axialNeighbours c@(AxialCoord (q, r)) = map ((<+> c) . AxialCoord) $ [
+        	(0, negate 1),
+        	(1, negate 1),
             (1, 0),
-            (1, negate 1),
-            (0, negate 1),
-            (negate 1, 0),
+            (0, 1),
             (negate 1, 1),
-            (0, 1)
+            (negate 1, 0)
             ]
 
 neighbours :: Coord c => c -> HexBoard a -> [a]
