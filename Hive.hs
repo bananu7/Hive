@@ -16,6 +16,7 @@ import Data.List.Split (chunksOf)
 import Data.Ix (range)
 import Data.Maybe (catMaybes, isNothing, isJust)
 import qualified Data.Set as Set
+import Debug.Trace
 
 import Hive.Board
 import Hive.Coord
@@ -84,12 +85,12 @@ expandAntMoves b m =
         newMoves :: MoveSet
         newMoves = foldl1 Set.union . map (expandSingleMove b) . Set.toList $ m
 
-        diff = Set.difference m newMoves
-    in        
+        diff = Set.difference newMoves m
+    in
         if Set.size diff > 0 then
             expandAntMoves b (m `Set.union` newMoves)
         else
-            m `Set.union` newMoves
+            m
         
 
 -- remove the original ant from the spot

@@ -59,7 +59,8 @@ sampleLoad = SampleState <$> loadSprites
 startBoard = emptyBoard
     & insert (OffsetCoord (3, 3)) (PlayerWhite, Queen)
     & insert (OffsetCoord (3, 4)) (PlayerBlack, Queen)
-    & insert (OffsetCoord (4, 2)) (PlayerBlack, Ant)
+    & insert (OffsetCoord (3, 5)) (PlayerBlack, Queen)
+    & insert (OffsetCoord (4, 3)) (PlayerBlack, Ant)
 
 displayScale :: Float
 displayScale = 0.6
@@ -80,7 +81,7 @@ drawMoves c s =
 sampleDraw :: DrawFn SampleState
 sampleDraw s = pieces ++ moves
     where
-        moves = drawMoves (OffsetCoord (4, 2)) s
+        moves = drawMoves (OffsetCoord (4, 3)) s
 
         pieces = map drawPiece $ toList (s ^. board)
         drawPiece (pos, (owner, unit)) = scaled (Vec2 displayScale displayScale) $ translate (coordToPixel pos) $ sprite TopLeft (findSprite (owner, unit))
