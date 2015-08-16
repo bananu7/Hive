@@ -35,8 +35,20 @@ isValidMove (MoveInsert p (owner, unit)) board = numberOfFriendFields >= 1 && nu
         numberOfEnemyFields = numberOfFields $ playerCounterpart owner
         numberOfFields player = length . filter ((== player) . fst) $ neighbours p board    
 
-isValidMove (MoveFromTo _ _) board = undefined
- 
+isValidMove (MoveFromTo from to) board = isValidUnitMove (o, u) board to
+    where
+        u :: Unit
+        o :: Player
+        (o, u) = lookup from board
+
+isSurrounded :: Coord c => Board -> c -> Bool
+
+-- The owner of the unit isn't necessary to find out if the move is valid.
+isValidUnitMove :: Coord c => Unit -> Board -> (c, c) -> Bool
+isValidUnitMove Ant b (from, to) = (not . isSurrounded b $ from) && (not . isSurrounded b $ to)
+
+isValidUnitMove _ _ _ = undefined
+
 playerCounterpart :: Player -> Player
 playerCounterpart PlayerBlack = PlayerWhite
 playerCounterpart PlayerWhite = PlayerBlack
