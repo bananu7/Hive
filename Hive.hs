@@ -4,6 +4,7 @@ module Hive
     , Board
     , Unit(..)
     , Player(..)
+    , Move(..)
     , isValidMove
     , Point
     )
