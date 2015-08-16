@@ -19,6 +19,9 @@ toList (HexBoard b) = Map.toList b
 insert :: Coord c => c -> a -> HexBoard a -> HexBoard a
 insert c a (HexBoard b) = HexBoard $ Map.insert (toAxial c) a b
 
+size :: HexBoard a -> Int
+size (HexBoard a) = Map.size a
+
 neighbourCoords :: (Coord c) => c -> [AxialCoord]
 neighbourCoords c = axialNeighbours . toAxial $ c
     where
