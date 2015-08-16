@@ -7,6 +7,7 @@ module Hive
     , Move(..)
     , isValidMove
     , Point
+    , validUnitMoves
     )
 where
 
@@ -36,11 +37,16 @@ isValidMove (MoveInsert p (owner, unit)) board = numberOfFriendFields >= 1 && nu
         numberOfEnemyFields = numberOfFields $ playerCounterpart owner
         numberOfFields player = length . filter ((== player) . fst) . catMaybes $ neighbours p board    
 
-isValidMove (MoveFromTo from to) board = isValidUnitMove (o, u) board to
-    where
-        u :: Unit
-        o :: Player
-        (o, u) = lookup from board
+isValidMove (MoveFromTo from to) board = 
+    case lookup from board of
+        Just (o, u) -> isValidUnitMove u board (from, to)
+        Nothing -> False -- no unit at start point obviously means invalid move
+
+-- The owner of the unit isn't necessary to find out if the move is valid.
+isValidUnitMove :: Coord c => Unit -> Board -> (c, c) -> Bool
+isValidUnitMove Ant b (from, to) = undefined
+isValidUnitMove Spider b (from, to) = undefined
+isValidUnitMove _ _ _ = undefined
 
 type Direction = Int
 {-
@@ -56,7 +62,7 @@ type MoveSet = Set.Set AxialCoord
 
 -- 
 expandSingleMove :: Coord c => Board -> c -> MoveSet
-expandSingleMove b c = map (moved c) . filter isValidDirection $ [0..5]
+expandSingleMove b c = Set.fromList . map (moved c) . filter isValidDirection $ [0..5]
     where
         n = neighbours c b
         getN d = n !! (d `mod` 6)
@@ -68,35 +74,36 @@ expandSingleMove b c = map (moved c) . filter isValidDirection $ [0..5]
                 xor True = not
                 xor False = id
 
-        moved :: AxialCoord -> Direction -> AxialCoord
-        moved c d = (AxialCoord $ neighbourOffsets !! d) <+> c
+        moved :: Coord c => c -> Direction -> AxialCoord
+        moved c d = (AxialCoord $ neighbourOffsets !! d) <+> (toAxial c)
 
 -- hive graph traversal
 expandAntMoves :: Board -> MoveSet -> MoveSet
 expandAntMoves b m =
     let
-        newMoves = Set.fromList $ map expandSingleMove (Set.toList m)
-    in
-        m ++ expandAntMoves b (Set.difference m newMoves)
+        newMoves :: MoveSet
+        newMoves = foldl1 Set.union . map (expandSingleMove b) . Set.toList $ m
+
+        diff = Set.difference m newMoves
+    in        
+        if Set.size diff > 0 then
+            expandAntMoves b (m `Set.union` newMoves)
+        else
+            m `Set.union` newMoves
+        
 
 -- remove the original ant from the spot
 validAntMoves :: Coord c => c -> Board -> [AxialCoord]
-validAntMoves c b = toList $ expandAntMoves (delete c b) (Set.fromList [c])
+validAntMoves c b = Set.toList $ expandAntMoves (delete c b) (Set.fromList [toAxial c])
 
 validUnitMoves :: Coord c => c -> Board -> [AxialCoord]
 validUnitMoves c b = 
-    let 
-        (_, u) = lookup c b
-    in
-        case u of
-            Ant -> validAntMoves c b
-            _ -> []
-
--- The owner of the unit isn't necessary to find out if the move is valid.
-isValidUnitMove :: Coord c => Unit -> Board -> (c, c) -> Bool
-isValidUnitMove Ant b (from, to) = undefined
-isValidUnitMove Spider b (from, to) = undefined
-isValidUnitMove _ _ _ = undefined
+    case lookup c b of
+        Just (_, u) ->
+            case u of
+                Ant -> validAntMoves c b
+                _ -> []
+        Nothing -> []
 
 playerCounterpart :: Player -> Player
 playerCounterpart PlayerBlack = PlayerWhite

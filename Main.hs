@@ -19,6 +19,7 @@ import qualified Data.Map.Strict as Map
 
 data SampleState = SampleState {
     _sprites :: [((Player, Unit), Sprite)],
+    _moveSprite :: Sprite,
     _board :: Board
 }
 makeLenses ''SampleState
@@ -39,12 +40,11 @@ imageData = [
     ((PlayerBlack, Ant), "ant_b.png")
     ]
 
-moveSprite = loadSprite $ resourcePath ++ "move.png"
-
 loadSprites :: IO [((Player, Unit), Sprite)]
 loadSprites = do
     let withPaths = map (Control.Lens._2 %~ (resourcePath ++)) imageData
     mapM turnIntoSprite withPaths
+
     where
         turnIntoSprite :: ((Player, Unit), String) -> IO ((Player, Unit), Sprite)
         turnIntoSprite (a, b) = do
@@ -53,12 +53,13 @@ loadSprites = do
 
 sampleLoad :: LoadFn SampleState
 sampleLoad = SampleState <$> loadSprites
+                         <*> (loadSprite $ resourcePath ++ "move.png")
                          <*> pure startBoard
 
 startBoard = emptyBoard
     & insert (OffsetCoord (3, 3)) (PlayerWhite, Queen)
     & insert (OffsetCoord (3, 4)) (PlayerBlack, Queen)
-    & insert (OffsetCoord (3, 2)) (PlayerBlack, Ant)
+    & insert (OffsetCoord (4, 2)) (PlayerBlack, Ant)
 
 displayScale :: Float
 displayScale = 0.6
@@ -68,22 +69,24 @@ coordToPixel pos = Vec2 (fromIntegral x) (fromIntegral y)
     where (x,y) = toPixel (floor $ 200 * displayScale) pos
 
 drawMoves :: Coord c => c -> DrawFn SampleState
-drawMoves =
+drawMoves c s =
     let 
         b = (s ^. board)
         moves = validUnitMoves c b
-        moveToSprite pos = translate (coordToPixel pos) $ sprite TopLeft moveSprite
+        moveToSprite pos = scaled (Vec2 displayScale displayScale) $ translate (coordToPixel pos) $ sprite TopLeft (s ^. moveSprite)
     in
         map moveToSprite moves
 
 sampleDraw :: DrawFn SampleState
-sampleDraw s = map drawPiece $ toList (s ^. board)
+sampleDraw s = pieces ++ moves
     where
+        moves = drawMoves (OffsetCoord (4, 2)) s
+
+        pieces = map drawPiece $ toList (s ^. board)
         drawPiece (pos, (owner, unit)) = scaled (Vec2 displayScale displayScale) $ translate (coordToPixel pos) $ sprite TopLeft (findSprite (owner, unit))
 
         findSprite :: (Player, Unit) -> Sprite
         findSprite pu = fromJust $ List.lookup pu (s ^. sprites)
-
 
 sampleUpdate :: UpdateFn SampleState
 sampleUpdate _ = return ()
