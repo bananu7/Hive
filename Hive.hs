@@ -43,6 +43,27 @@ isValidMove (MoveFromTo from to) board =
         Just (o, u) -> isValidUnitMove u board (from, to)
         Nothing -> False -- no unit at start point obviously means invalid move
 
+distinct :: [Point] -> [Point]
+distinct [] = []
+distinct (x:xs) = x : (distinct $ filter (\p -> p /= x) xs)
+
+
+allCordsFromPiece :: Point -> Board -> [Point]
+allCordsFromPiece p b  
+	| length pieceNeighbors == 0 = [p]
+	| otherwise = p : (
+		foldl (\acc x -> acc ++ (allCordsFromPiece x $ delete p b)) [] pieceNeighbors
+	)
+	where
+		pieceNeighbors = existingNeighboursCords p b
+
+isDestroyingHive :: Coord c => c -> Board -> Bool
+isDestroyingHive from board = length (distinct connected) /= (length $ toList board)
+	where
+		randomPiece = existingNeighboursCords from board !! 0
+		connected = allCordsFromPiece randomPiece $ delete from board
+
+
 -- The owner of the unit isn't necessary to find out if the move is valid.
 isValidUnitMove :: Coord c => Unit -> Board -> (c, c) -> Bool
 isValidUnitMove Ant b (from, to) = undefined
@@ -99,12 +120,15 @@ validAntMoves c b = Set.toList $ expandAntMoves (delete c b) (Set.fromList [toAx
 
 validUnitMoves :: Coord c => c -> Board -> [AxialCoord]
 validUnitMoves c b = 
-    case lookup c b of
-        Just (_, u) ->
-            case u of
-                Ant -> validAntMoves c b
-                _ -> []
-        Nothing -> []
+	if isDestroyingHive c b then
+		[]
+	else
+		case lookup c b of
+			Just (_, u) ->			
+				case u of
+					Ant -> validAntMoves c b
+					_ -> []
+			Nothing -> []
 
 playerCounterpart :: Player -> Player
 playerCounterpart PlayerBlack = PlayerWhite

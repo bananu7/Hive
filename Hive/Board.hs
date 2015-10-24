@@ -3,7 +3,7 @@ module Hive.Board where
 import Prelude hiding (lookup)
 import Hive.Coord
 import qualified Data.Map.Strict as Map
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, isJust)
 
 data HexBoard a = HexBoard (Map.Map AxialCoord a)
 
@@ -40,3 +40,10 @@ neighbourCoords c = axialNeighbours . toAxial $ c
 
 neighbours :: Coord c => c -> HexBoard a -> [Maybe a]
 neighbours c b = map ((flip lookup) b) . neighbourCoords $ c
+
+existingNeighboursCords :: Coord c => c -> HexBoard a -> [AxialCoord]
+existingNeighboursCords c b = filter (\cord -> exists cord) cords
+	where
+		cords =  neighbourCoords c
+		exists c = isJust $ lookup c b
+

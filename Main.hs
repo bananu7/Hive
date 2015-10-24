@@ -61,6 +61,7 @@ startBoard = emptyBoard
     & insert (OffsetCoord (3, 4)) (PlayerBlack, Queen)
     & insert (OffsetCoord (3, 5)) (PlayerBlack, Queen)
     & insert (OffsetCoord (4, 3)) (PlayerBlack, Ant)
+	& insert (OffsetCoord (4, 2)) (PlayerBlack, Queen)
 
 displayScale :: Float
 displayScale = 0.6
